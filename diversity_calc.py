@@ -21,9 +21,10 @@
  *                                                                         *
  ***************************************************************************/
 """
+from PyQt5.QtWidgets import QMessageBox
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction
+from qgis.PyQt.QtWidgets import QAction, QMessageBox
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -31,7 +32,8 @@ from .resources import *
 from .diversity_calc_dialog import DiversityCalcDialog
 import os.path
 
-from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel
+from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel, QgsMessageLog, Qgis
+from .diversity_functions import dc_summarizePoly, dc_MergeDictionaries
 
 
 class DiversityCalc:
@@ -84,18 +86,17 @@ class DiversityCalc:
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('DiversityCalc', message)
 
-
     def add_action(
-        self,
-        icon_path,
-        text,
-        callback,
-        enabled_flag=True,
-        add_to_menu=True,
-        add_to_toolbar=True,
-        status_tip=None,
-        whats_this=None,
-        parent=None):
+            self,
+            icon_path,
+            text,
+            callback,
+            enabled_flag=True,
+            add_to_menu=True,
+            add_to_toolbar=True,
+            status_tip=None,
+            whats_this=None,
+            parent=None):
         """Add a toolbar icon to the toolbar.
 
         :param icon_path: Path to the icon for this action. Can be a resource
@@ -172,7 +173,6 @@ class DiversityCalc:
         # will be set False in run()
         self.first_start = True
 
-
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
@@ -180,7 +180,6 @@ class DiversityCalc:
                 self.tr(u'&Diversity Calculator'),
                 action)
             self.iface.removeToolBarIcon(action)
-
 
     def run(self):
         """Run method that performs all the real work"""
@@ -191,15 +190,15 @@ class DiversityCalc:
             self.first_start = False
             self.dlg = DiversityCalcDialog()
 
-            #Set filter in compobox
+            # Set filter in compobox
             self.dlg.mcbPoly.setFilters(QgsMapLayerProxyModel.PolygonLayer)
             self.dlg.mcbPoint.setFilters(QgsMapLayerProxyModel.PointLayer)
 
-            #set only string fields in combobox
+            # set only string fields in combobox
             self.dlg.fcbCategory.setFilters(QgsFieldProxyModel.String)
             self.dlg.fcbSpecies.setFilters(QgsFieldProxyModel.String)
 
-            #populate combobox with fields of selected layer
+            # populate combobox with fields of selected layer
             self.dlg.fcbCategory.setLayer(self.dlg.mcbPoly.currentLayer())
             self.dlg.fcbSpecies.setLayer(self.dlg.mcbPoint.currentLayer())
 
@@ -207,8 +206,31 @@ class DiversityCalc:
         self.dlg.show()
         # Run the dialog event loop
         result = self.dlg.exec_()
+
         # See if OK was pressed
         if result:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
-            pass
+            # pass
+
+            # set layer
+            lyrPoly = self.dlg.mcbPoly.currentLayer()
+            lyrPoint = self.dlg.mcbPoint.currentLayer()
+
+            # set field by layer category
+            fldCategory = self.dlg.fcbCategory.currentField()
+            fldCpecies = self.dlg.fcbSpecies.currentField()
+
+            dctMain = {}
+            # loop thru all polygon layer selected in combo box
+            for poly in lyrPoly.getFeatures():
+                sCategory = poly.attribute(fldCategory)
+                QgsMessageLog.logMessage("Category: {}".format(
+                    sCategory), "Diversity Calculator", level=Qgis.Info)
+                dctSummary = dc_summarizePoly(poly, lyrPoint, fldCpecies)
+                QgsMessageLog.logMessage("Summary: {}".format(
+                    dctSummary), "Diversity Calculator", level=Qgis.Info)
+
+                dctMain = dc_MergeDictionaries(dctMain, sCategory, dctSummary)
+
+            QMessageBox.information(self.dlg, "Summary", str(dctMain))
