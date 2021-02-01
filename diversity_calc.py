@@ -31,6 +31,8 @@ from .resources import *
 from .diversity_calc_dialog import DiversityCalcDialog
 import os.path
 
+from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel
+
 
 class DiversityCalc:
     """QGIS Plugin Implementation."""
@@ -188,6 +190,18 @@ class DiversityCalc:
         if self.first_start == True:
             self.first_start = False
             self.dlg = DiversityCalcDialog()
+
+            #Set filter in compobox
+            self.dlg.mcbPoly.setFilters(QgsMapLayerProxyModel.PolygonLayer)
+            self.dlg.mcbPoint.setFilters(QgsMapLayerProxyModel.PointLayer)
+
+            #set only string fields in combobox
+            self.dlg.fcbCategory.setFilters(QgsFieldProxyModel.String)
+            self.dlg.fcbSpecies.setFilters(QgsFieldProxyModel.String)
+
+            #populate combobox with fields of selected layer
+            self.dlg.fcbCategory.setLayer(self.dlg.mcbPoly.currentLayer())
+            self.dlg.fcbSpecies.setLayer(self.dlg.mcbPoint.currentLayer())
 
         # show the dialog
         self.dlg.show()
