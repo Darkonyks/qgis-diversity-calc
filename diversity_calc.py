@@ -236,7 +236,7 @@ class DiversityCalc:
 
                 dctMain = dc_MergeDictionaries(dctMain, sCategory, dctSummary)
 
-            QMessageBox.information(self.dlg, "Summary", dc_resultString(dctMain))
+            #QMessageBox.information(self.dlg, "Summary", dc_resultString(dctMain))
 
             dlgResult = DlgResult()
 
