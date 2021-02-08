@@ -8,4 +8,9 @@ class DlgResult(QDialog, Ui_dlgResult):
 
 
         self.setLayout(self.lytMain)
-        self.trwResults.setColumnWidth(0, 325)
+        self.trwResults.setColumnWidth(0, 230)
+        self.trwResults.setColumnWidth(1, 80)
+        self.trwResults.setColumnWidth(2, 80)
+        self.trwResults.setColumnWidth(3, 80)
+        self.trwResults.setColumnWidth(4, 80)
+        self.trwResults.setColumnWidth(5, 80)

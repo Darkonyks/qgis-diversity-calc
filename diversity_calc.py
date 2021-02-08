@@ -21,20 +21,22 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt5.QtWidgets import QMessageBox
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
+import os.path
+
+from PyQt5.QtWidgets import QMessageBox, QTreeWidgetItem
+from qgis.core import (Qgis, QgsFieldProxyModel, QgsMapLayerProxyModel,
+                       QgsMessageLog)
+from qgis.PyQt.QtCore import QCoreApplication, QSettings, QTranslator
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QMessageBox
 
-# Initialize Qt resources from file resources.py
-from .resources import *
 # Import the code for the dialog
 from .diversity_calc_dialog import DiversityCalcDialog
-import os.path
-
-from qgis.core import QgsMapLayerProxyModel, QgsFieldProxyModel, QgsMessageLog, Qgis
-from .diversity_functions import dc_resultString, dc_summarizePoly, dc_MergeDictionaries
+from .diversity_functions import (dc_MergeDictionaries, dc_resultString,
+                                  dc_summarizePoly, dc_richness, dc_evennes,dc_shannons, dc_simpsons)
 from .diversity_result_dialog import DlgResult
+# Initialize Qt resources from file resources.py
+from .resources import *
 
 
 class DiversityCalc:
@@ -237,5 +239,16 @@ class DiversityCalc:
             QMessageBox.information(self.dlg, "Summary", dc_resultString(dctMain))
 
             dlgResult = DlgResult()
+
+            for category, summary in dctMain.items():
+                total = sum(summary.values())
+                twiCat = QTreeWidgetItem(dlgResult.trwResults, [category, str(total), str(dc_richness(summary)), "{:3.3f}".format(dc_evennes(summary)), 
+                    "{:3.3f}".format(dc_shannons(summary)), "{:3.3f}".format(dc_simpsons(summary))])
+
+                for species, obs in summary.items():
+                    twiCat.addChild(QTreeWidgetItem(twiCat, [species, str(obs)]))
+
+                dlgResult.trwResults.addTopLevelItem(twiCat)
+
             dlgResult.show()
             dlgResult.exec()
